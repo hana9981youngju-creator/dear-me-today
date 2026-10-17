@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘, 나에게 · Dear Me, Today</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Serif KR', serif; background-color: #FDFBF7; }
+    .btn-primary { background-color: #C88D7E; color: white; transition: background-color 0.2s; }
+    .btn-primary:hover { background-color: #B07A6C; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const THEMES = [
+      { id: 1, name: "비 내리는 창가", url: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?w=1080&q=80" },
+      { id: 2, name: "햇살 비치는 정원", url: "https://images.unsplash.com/photo-1558293842-c0fd3db86157?w=1080&q=80" },
+      { id: 3, name: "새벽 바다", url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1080&q=80" },
+      { id: 4, name: "분홍빛 노을", url: "https://images.unsplash.com/photo-1502481851512-e9e2529bfbf9?w=1080&q=80" }
+    ];
+
+    const PHRASES = [
+      "오늘 하루도 당신의 방식대로 아름다웠습니다.",
+      "지나온 시간들은 결코 사라지지 않아요.",
+      "마음이 텅 빈 것 같은 날에는, 따뜻한 차 한 잔을 곁에 두세요.",
+      "조금 쉬어가도 세상은 무너지지 않습니다."
+    ];
+
+    function App() {
+      const [cards, setCards] = useState([]);
+      const [isGenerating, setIsGenerating] = useState(false);
+
+      const generateCards = () => {
+        setIsGenerating(true);
+        setTimeout(() => {
+          const newCards = PHRASES.map((text, i) => ({
+            id: i,
+            text: text,
+            theme: THEMES[i % THEMES.length]
+          }));
+          setCards(newCards);
+          setIsGenerating(false);
+        }, 800);
+      };
+
+      const downloadImage = (card, index) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1920;
+        const ctx = canvas.getContext('2d');
+        
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = card.theme.url;
+        img.onload = () => {
+          // 배경 그리기
+          const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+          const x = (canvas.width / 2) - (img.width / 2) * scale;
+          const y = (canvas.height / 2) - (img.height / 2) * scale;
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          
+          // 오버레이
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // 텍스트
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = '500 52px "Noto Serif KR"';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          const lines = card.text.split('\n');
+          lines.forEach((line, i) => {
+            ctx.fillText(line, canvas.width / 2, (canvas.height / 2) + (i * 70));
+          });
+          
+          // 다운로드
+          const link = document.createElement('a');
+          link.download = `DearMe_Today_${index + 1}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        };
+      };
+
+      return (
+        <div className="min-h-screen p-4 md:p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <div className="text-center space-y-3 pt-6">
+              <h1 className="text-3xl md:text-4xl font-semibold text-[#8B5A44]">오늘, 나에게 · Dear Me, Today</h1>
+              <p className="text-[#6D635B]">남을 챙기느라 자신을 놓친 사람이, 오늘만큼은 자기 자신에게 위로를 건네는 공간</p>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#EBE5DE]">
+              <textarea 
+                className="w-full p-4 bg-[#FDFBF7] border border-[#EBE5DE] rounded-xl focus:outline-none mb-4"
+                placeholder="요즘 너무 지쳐서 아무것도 하기 싫어요..."
+                rows="3"
+              />
+              <button 
+                onClick={generateCards}
+                className="w-full py-4 btn-primary rounded-xl font-medium text-lg"
+              >
+                {isGenerating ? '위로 글귀 만드는 중...' : '위로 글귀 4장 만들기'}
+              </button>
+            </div>
+
+            {cards.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {cards.map((card, i) => (
+                  <div key={card.id} className="space-y-2">
+                    <div className="aspect-[9/16] relative rounded-xl overflow-hidden shadow-md bg-black">
+                      <img src={card.theme.url} className="absolute inset-0 w-full h-full object-cover opacity-60" crossOrigin="anonymous" />
+                      <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-white break-keep">
+                        <p className="text-lg font-medium leading-relaxed drop-shadow-md">{card.text}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => downloadImage(card, i)}
+                      className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium"
+                    >
+                      이미지 저장하기
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
